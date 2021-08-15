@@ -24,41 +24,78 @@ namespace Rowlan.DebugTools
         [Tooltip("Axis aligned as wire spheres, an non axis aligned extents as filled spheres")]
         public bool extents;
 
+
+        private Bounds zeroBounds = new Bounds(Vector3.zero, Vector3.zero);
+
         void OnDrawGizmos()
         {
+            Bounds localBounds;
+            Bounds worldBounds;
+
+            if (!GetBounds( out localBounds, out worldBounds))
+            {
+                Debug.LogError("Can't get bounds from " + transform.name);
+                return;
+            }
+
             Color prevHandlesColor = Handles.color;
             Color prevGizmosColor = Gizmos.color;
             {
 
                 if (positionAndCenter)
-                    DrawPositionAndCenter();
+                    DrawPositionAndCenter( (Bounds) localBounds, (Bounds) worldBounds);
 
                 if (meshRendererAABB)
-                    DrawMeshRendererAABB();
+                    DrawMeshRendererAABB((Bounds) localBounds, (Bounds) worldBounds);
 
                 if (meshRendererNonAABB)
-                    DrawMeshRendererNonAABB();
+                    DrawMeshRendererNonAABB((Bounds) localBounds, (Bounds) worldBounds);
 
                 if (extents)
-                    DrawExtents();
+                    DrawExtents((Bounds) localBounds, (Bounds) worldBounds);
             }
             Handles.color = prevHandlesColor;
             Gizmos.color = prevGizmosColor;
         }
 
-        private void DrawPositionAndCenter()
+        private bool GetBounds( out Bounds localBounds, out Bounds worldBounds) {
+
+            MeshFilter meshFilter = GetComponent<MeshFilter>();
+            MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
+
+            if ( meshFilter && meshRenderer)
+            {
+                localBounds = meshFilter.sharedMesh.bounds;
+                worldBounds = meshRenderer.bounds;
+
+                return true;
+            }
+            else
+            {
+                SkinnedMeshRenderer skinnedMeshRenderer = GetComponent<SkinnedMeshRenderer>();
+                if(skinnedMeshRenderer)
+                {
+                    localBounds = skinnedMeshRenderer.localBounds;
+                    worldBounds = skinnedMeshRenderer.bounds;
+
+                    return true;
+                }
+
+            }
+
+            localBounds = zeroBounds;
+            worldBounds = zeroBounds;
+
+            return false;
+        }
+
+        private void DrawPositionAndCenter(Bounds localBounds, Bounds worldBounds)
         {
             #region bounds center
-            // world
-            MeshRenderer meshRenderer = transform.GetComponent<MeshRenderer>();
-
-            // bounds center
-            Bounds bounds = meshRenderer.bounds;
-            Vector3 position = bounds.center;
 
             // center
             Gizmos.color = Color.black;
-            Gizmos.DrawSphere(bounds.center, 0.2f);
+            Gizmos.DrawSphere(worldBounds.center, 0.2f);
 
             #endregion bounds center
 
@@ -72,66 +109,56 @@ namespace Rowlan.DebugTools
 
         }
 
-        private void DrawMeshRendererAABB()
+        private void DrawMeshRendererAABB(Bounds localBounds, Bounds worldBounds)
         {
-            // world bounds
-            MeshRenderer meshRenderer = transform.GetComponent<MeshRenderer>();
-            Vector3 meshRendererSize = meshRenderer.bounds.size;
-
-            Vector3 position = meshRenderer.bounds.center;
+            Vector3 rendererSize = worldBounds.size;
+            Vector3 position = worldBounds.center;
 
             // filled cube
             Gizmos.color = new Color(0, 1, 0, 0.1f);
-            Gizmos.DrawCube(position, meshRendererSize);
+            Gizmos.DrawCube(position, rendererSize);
 
             // outer wireframe of the filled cube
             Gizmos.color = Color.green;
-            Gizmos.DrawWireCube(position, meshRendererSize);
+            Gizmos.DrawWireCube(position, rendererSize);
 
         }
 
-
-        private void DrawExtents()
+        private void DrawExtents(Bounds localBounds, Bounds worldBounds)
         {
             Handles.color = Color.white;
 
             float lineThickness = 2f;
             float radius = 0.2f;
 
-            Matrix4x4 prevMatrix = Gizmos.matrix;
+            // local
+            Vector3 localBoundsSize = localBounds.size;
+
+            // world
+            Vector3 position = worldBounds.center;
+
             {
-                // local
-                MeshFilter meshFilter = transform.GetComponent<MeshFilter>();
-                Vector3 meshFilterSize = meshFilter.sharedMesh.bounds.size;
-
-                // world
-                MeshRenderer meshRenderer = transform.GetComponent<MeshRenderer>();
-
-                // bounds
-                Bounds bounds = meshRenderer.bounds;
-                Vector3 position = bounds.center;
-
                 // axis aligned extents
                 Gizmos.color = Color.red;
-                Gizmos.DrawWireSphere(position + Vector3.right * bounds.extents.x, radius);
-                Handles.DrawLine(position, position + Vector3.right * bounds.extents.x);
+                Gizmos.DrawWireSphere(position + Vector3.right * worldBounds.extents.x, radius);
+                Handles.DrawLine(position, position + Vector3.right * worldBounds.extents.x);
 
                 Gizmos.color = Color.green;
-                Gizmos.DrawWireSphere(position + Vector3.up * bounds.extents.y, radius);
-                Handles.DrawLine(position, position + Vector3.up * bounds.extents.y);
+                Gizmos.DrawWireSphere(position + Vector3.up * worldBounds.extents.y, radius);
+                Handles.DrawLine(position, position + Vector3.up * worldBounds.extents.y);
 
                 Gizmos.color = Color.blue;
-                Gizmos.DrawWireSphere(position + Vector3.forward * bounds.extents.z, radius);
-                Handles.DrawLine(position, position + Vector3.forward * bounds.extents.z);
+                Gizmos.DrawWireSphere(position + Vector3.forward * worldBounds.extents.z, radius);
+                Handles.DrawLine(position, position + Vector3.forward * worldBounds.extents.z);
 
                 // calculate offsets
-                Vector3 offsetRight = transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x;
+                Vector3 offsetRight = transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x;
                 Vector3 positionRight = position + offsetRight;
 
-                Vector3 offsetUp = transform.up * meshFilterSize.y * 0.5f * transform.lossyScale.y;
+                Vector3 offsetUp = transform.up * localBoundsSize.y * 0.5f * transform.lossyScale.y;
                 Vector3 positionUp = position + offsetUp;
 
-                Vector3 offsetForward = transform.forward * meshFilterSize.z * 0.5f * transform.lossyScale.z;
+                Vector3 offsetForward = transform.forward * localBoundsSize.z * 0.5f * transform.lossyScale.z;
                 Vector3 positionForward = position + offsetForward;
 
                 #region draw gizmos and handles
@@ -157,54 +184,46 @@ namespace Rowlan.DebugTools
                 #endregion draw gizmos and handles
 
             }
-            Gizmos.matrix = prevMatrix;
-
         }
 
-        private void DrawMeshRendererNonAABB()
+        private void DrawMeshRendererNonAABB(Bounds localBounds, Bounds worldBounds)
         {
+            // local
+            Vector3 localBoundsSize = localBounds.size;
+
+            // world
+            Vector3 position = worldBounds.center;
+
             float lineThickness = 2f;
 
-            Matrix4x4 prevMatrix = Gizmos.matrix;
             {
                 Handles.color = Color.magenta;
 
-                // local
-                MeshFilter meshFilter = transform.GetComponent<MeshFilter>();
-                Vector3 meshFilterSize = meshFilter.sharedMesh.bounds.size;
-
-                // world
-                MeshRenderer meshRenderer = transform.GetComponent<MeshRenderer>();
-
-                // bounds
-                Bounds bounds = meshRenderer.bounds;
-                Vector3 position = bounds.center;
-
                 // calculate offsets
-                Vector3 offsetRight = transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x;
+                Vector3 offsetRight = transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x;
                 Vector3 positionRight = position + offsetRight;
 
-                Vector3 offsetUp = transform.up * meshFilterSize.y * 0.5f * transform.lossyScale.y;
+                Vector3 offsetUp = transform.up * localBoundsSize.y * 0.5f * transform.lossyScale.y;
                 Vector3 positionUp = position + offsetUp;
 
-                Vector3 offsetForward = transform.forward * meshFilterSize.z * 0.5f * transform.lossyScale.z;
+                Vector3 offsetForward = transform.forward * localBoundsSize.z * 0.5f * transform.lossyScale.z;
                 Vector3 positionForward = position + offsetForward;
 
                 #region draw lines
-                Vector3 p1 = position + transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x + offsetForward + offsetUp;
-                Vector3 p2 = position - transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x + offsetForward + offsetUp;
+                Vector3 p1 = position + transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x + offsetForward + offsetUp;
+                Vector3 p2 = position - transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x + offsetForward + offsetUp;
                 Handles.DrawLine(p1, p2, lineThickness);
 
-                Vector3 p3 = position + transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x + offsetForward - offsetUp;
-                Vector3 p4 = position - transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x + offsetForward - offsetUp;
+                Vector3 p3 = position + transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x + offsetForward - offsetUp;
+                Vector3 p4 = position - transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x + offsetForward - offsetUp;
                 Handles.DrawLine(p3, p4, lineThickness);
 
-                Vector3 p5 = position + transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x - offsetForward - offsetUp;
-                Vector3 p6 = position - transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x - offsetForward - offsetUp;
+                Vector3 p5 = position + transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x - offsetForward - offsetUp;
+                Vector3 p6 = position - transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x - offsetForward - offsetUp;
                 Handles.DrawLine(p5, p6, lineThickness);
 
-                Vector3 p7 = position + transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x - offsetForward + offsetUp;
-                Vector3 p8 = position - transform.right * meshFilterSize.x * 0.5f * transform.lossyScale.x - offsetForward + offsetUp;
+                Vector3 p7 = position + transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x - offsetForward + offsetUp;
+                Vector3 p8 = position - transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x - offsetForward + offsetUp;
                 Handles.DrawLine(p7, p8, lineThickness);
                 #endregion draw lines
 
@@ -224,7 +243,6 @@ namespace Rowlan.DebugTools
                 #endregion draw cube
 
             }
-            Gizmos.matrix = prevMatrix;
         }
 #endif
     }
