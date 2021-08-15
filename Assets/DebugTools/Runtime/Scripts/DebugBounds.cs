@@ -77,7 +77,7 @@ namespace Rowlan.DebugTools
 
                 if (skinnedMeshRenderer)
                 {
-                    localBounds = skinnedMeshRenderer.localBounds;
+                    localBounds = skinnedMeshRenderer.sharedMesh.bounds;
                     worldBounds = skinnedMeshRenderer.bounds;
 
                     return true;
