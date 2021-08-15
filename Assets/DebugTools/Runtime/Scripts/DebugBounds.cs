@@ -24,6 +24,8 @@ namespace Rowlan.DebugTools
         [Tooltip("Axis aligned as wire spheres, an non axis aligned extents as filled spheres")]
         public bool extents;
 
+        [Tooltip("The sphere which spans the bounds")]
+        public bool boundsSphere;
 
         private Bounds zeroBounds = new Bounds(Vector3.zero, Vector3.zero);
 
@@ -53,6 +55,10 @@ namespace Rowlan.DebugTools
 
                 if (extents)
                     DrawExtents((Bounds) localBounds, (Bounds) worldBounds);
+
+                if (boundsSphere)
+                    DrawBoundsSphere((Bounds)localBounds, (Bounds)worldBounds);
+
             }
             Handles.color = prevHandlesColor;
             Gizmos.color = prevGizmosColor;
@@ -222,6 +228,16 @@ namespace Rowlan.DebugTools
             Handles.DrawLine(p1, p5, lineThickness);
             Handles.DrawLine(p2, p6, lineThickness);
             Handles.DrawLine(p3, p7, lineThickness);
+
+        }
+
+        private void DrawBoundsSphere(Bounds localBounds, Bounds worldBounds)
+        {
+
+            float radius = worldBounds.extents.magnitude;
+
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(worldBounds.center, radius);
 
         }
 #endif
