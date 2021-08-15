@@ -72,8 +72,10 @@ namespace Rowlan.DebugTools
             }
             else
             {
+
                 SkinnedMeshRenderer skinnedMeshRenderer = GetComponent<SkinnedMeshRenderer>();
-                if(skinnedMeshRenderer)
+
+                if (skinnedMeshRenderer)
                 {
                     localBounds = skinnedMeshRenderer.localBounds;
                     worldBounds = skinnedMeshRenderer.bounds;
@@ -109,6 +111,56 @@ namespace Rowlan.DebugTools
 
         }
 
+
+        private void DrawExtents(Bounds localBounds, Bounds worldBounds)
+        {
+            Handles.color = Color.white;
+
+            float radius = 0.2f;
+
+            #region local to world
+
+            Vector3 worldCenter = transform.TransformPoint(localBounds.center);
+
+            Gizmos.color = Color.red;
+            Vector3 worldRight = transform.TransformPoint(localBounds.center + Vector3.right * localBounds.extents.x);
+            Gizmos.DrawSphere(worldRight, radius);
+            Handles.DrawLine(worldCenter, worldRight);
+
+            Gizmos.color = Color.green;
+            Vector3 worldUp = transform.TransformPoint(localBounds.center + Vector3.up * localBounds.extents.y);
+            Gizmos.DrawSphere(worldUp, radius);
+            Handles.DrawLine(worldCenter, worldUp);
+
+            Gizmos.color = Color.blue;
+            Vector3 worldForward = transform.TransformPoint(localBounds.center + Vector3.forward * localBounds.extents.z);
+            Gizmos.DrawSphere(worldForward, radius);
+            Handles.DrawLine(worldCenter, worldForward);
+
+            #endregion local to world
+
+            #region world bounds extents
+
+            Gizmos.color = Color.red;
+            Vector3 worldExtentsRight = worldBounds.center + Vector3.right * worldBounds.extents.x;
+            Gizmos.DrawWireSphere(worldExtentsRight, radius);
+            Handles.DrawLine(worldCenter, worldExtentsRight);
+
+            Gizmos.color = Color.green;
+            Vector3 worldExtentsUp = worldBounds.center + Vector3.up * worldBounds.extents.y;
+            Gizmos.DrawWireSphere(worldExtentsUp, radius);
+            Handles.DrawLine(worldCenter, worldExtentsUp);
+
+            Gizmos.color = Color.blue;
+            Vector3 worldExtentsForward = worldBounds.center + Vector3.forward * worldBounds.extents.z;
+            Gizmos.DrawWireSphere(worldExtentsForward, radius);
+            Handles.DrawLine(worldCenter, worldExtentsForward);
+
+            #endregion world bounds extents
+
+        }
+
+
         private void DrawMeshRendererAABB(Bounds localBounds, Bounds worldBounds)
         {
             Vector3 rendererSize = worldBounds.size;
@@ -124,125 +176,53 @@ namespace Rowlan.DebugTools
 
         }
 
-        private void DrawExtents(Bounds localBounds, Bounds worldBounds)
-        {
-            Handles.color = Color.white;
-
-            float lineThickness = 2f;
-            float radius = 0.2f;
-
-            // local
-            Vector3 localBoundsSize = localBounds.size;
-
-            // world
-            Vector3 position = worldBounds.center;
-
-            {
-                // axis aligned extents
-                Gizmos.color = Color.red;
-                Gizmos.DrawWireSphere(position + Vector3.right * worldBounds.extents.x, radius);
-                Handles.DrawLine(position, position + Vector3.right * worldBounds.extents.x);
-
-                Gizmos.color = Color.green;
-                Gizmos.DrawWireSphere(position + Vector3.up * worldBounds.extents.y, radius);
-                Handles.DrawLine(position, position + Vector3.up * worldBounds.extents.y);
-
-                Gizmos.color = Color.blue;
-                Gizmos.DrawWireSphere(position + Vector3.forward * worldBounds.extents.z, radius);
-                Handles.DrawLine(position, position + Vector3.forward * worldBounds.extents.z);
-
-                // calculate offsets
-                Vector3 offsetRight = transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x;
-                Vector3 positionRight = position + offsetRight;
-
-                Vector3 offsetUp = transform.up * localBoundsSize.y * 0.5f * transform.lossyScale.y;
-                Vector3 positionUp = position + offsetUp;
-
-                Vector3 offsetForward = transform.forward * localBoundsSize.z * 0.5f * transform.lossyScale.z;
-                Vector3 positionForward = position + offsetForward;
-
-                #region draw gizmos and handles
-
-                Gizmos.color = Color.red;
-                Handles.color = Gizmos.color;
-
-                Handles.DrawLine(position, positionRight, lineThickness);
-                Gizmos.DrawSphere(positionRight, radius);
-
-                Gizmos.color = Color.green;
-                Handles.color = Gizmos.color;
-
-                Handles.DrawLine(position, positionUp, lineThickness);
-                Gizmos.DrawSphere(positionUp, radius);
-
-                Gizmos.color = Color.blue;
-                Handles.color = Gizmos.color;
-
-                Handles.DrawLine(position, positionForward, lineThickness);
-                Gizmos.DrawSphere(positionForward, radius);
-
-                #endregion draw gizmos and handles
-
-            }
-        }
-
         private void DrawMeshRendererNonAABB(Bounds localBounds, Bounds worldBounds)
         {
-            // local
-            Vector3 localBoundsSize = localBounds.size;
 
-            // world
-            Vector3 position = worldBounds.center;
-
+            float half = 0.5f;
+            float sphereSize = 0.1f;
             float lineThickness = 2f;
+            Gizmos.color = Color.magenta;
+            Handles.color = Color.magenta;
 
-            {
-                Handles.color = Color.magenta;
+            Vector3 p0 = transform.TransformPoint(localBounds.center + Vector3.right * localBounds.extents.x + Vector3.up * localBounds.extents.y + Vector3.forward * localBounds.size.z * half);
+            Vector3 p1 = transform.TransformPoint(localBounds.center + Vector3.right * localBounds.extents.x + Vector3.up * localBounds.extents.y - Vector3.forward * localBounds.size.z * half);
+            Vector3 p2 = transform.TransformPoint(localBounds.center - Vector3.right * localBounds.extents.x + Vector3.up * localBounds.extents.y + Vector3.forward * localBounds.size.z * half);
+            Vector3 p3 = transform.TransformPoint(localBounds.center - Vector3.right * localBounds.extents.x + Vector3.up * localBounds.extents.y - Vector3.forward * localBounds.size.z * half);
+            // same for negative y
+            Vector3 p4 = transform.TransformPoint(localBounds.center + Vector3.right * localBounds.extents.x - Vector3.up * localBounds.extents.y + Vector3.forward * localBounds.size.z * half);
+            Vector3 p5 = transform.TransformPoint(localBounds.center + Vector3.right * localBounds.extents.x - Vector3.up * localBounds.extents.y - Vector3.forward * localBounds.size.z * half);
+            Vector3 p6 = transform.TransformPoint(localBounds.center - Vector3.right * localBounds.extents.x - Vector3.up * localBounds.extents.y + Vector3.forward * localBounds.size.z * half);
+            Vector3 p7 = transform.TransformPoint(localBounds.center - Vector3.right * localBounds.extents.x - Vector3.up * localBounds.extents.y - Vector3.forward * localBounds.size.z * half);
 
-                // calculate offsets
-                Vector3 offsetRight = transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x;
-                Vector3 positionRight = position + offsetRight;
+            // draw spheres
+            Gizmos.DrawSphere(p0, sphereSize);
+            Gizmos.DrawSphere( p1, sphereSize);
+            Gizmos.DrawSphere( p2, sphereSize);
+            Gizmos.DrawSphere( p3, sphereSize);
+            Gizmos.DrawSphere( p4, sphereSize);
+            Gizmos.DrawSphere( p5, sphereSize);
+            Gizmos.DrawSphere( p6, sphereSize);
+            Gizmos.DrawSphere( p7, sphereSize);
 
-                Vector3 offsetUp = transform.up * localBoundsSize.y * 0.5f * transform.lossyScale.y;
-                Vector3 positionUp = position + offsetUp;
+            // draw line: horizontal top
+            Handles.DrawLine(p0, p1, lineThickness);
+            Handles.DrawLine(p2, p3, lineThickness);
+            Handles.DrawLine(p0, p2, lineThickness);
+            Handles.DrawLine(p1, p3, lineThickness);
 
-                Vector3 offsetForward = transform.forward * localBoundsSize.z * 0.5f * transform.lossyScale.z;
-                Vector3 positionForward = position + offsetForward;
+            // draw line: horizontal bottom
+            Handles.DrawLine(p4, p5, lineThickness);
+            Handles.DrawLine(p6, p7, lineThickness);
+            Handles.DrawLine(p4, p6, lineThickness);
+            Handles.DrawLine(p5, p7, lineThickness);
 
-                #region draw lines
-                Vector3 p1 = position + transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x + offsetForward + offsetUp;
-                Vector3 p2 = position - transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x + offsetForward + offsetUp;
-                Handles.DrawLine(p1, p2, lineThickness);
+            // draw line: vertical
+            Handles.DrawLine(p0, p4, lineThickness);
+            Handles.DrawLine(p1, p5, lineThickness);
+            Handles.DrawLine(p2, p6, lineThickness);
+            Handles.DrawLine(p3, p7, lineThickness);
 
-                Vector3 p3 = position + transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x + offsetForward - offsetUp;
-                Vector3 p4 = position - transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x + offsetForward - offsetUp;
-                Handles.DrawLine(p3, p4, lineThickness);
-
-                Vector3 p5 = position + transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x - offsetForward - offsetUp;
-                Vector3 p6 = position - transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x - offsetForward - offsetUp;
-                Handles.DrawLine(p5, p6, lineThickness);
-
-                Vector3 p7 = position + transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x - offsetForward + offsetUp;
-                Vector3 p8 = position - transform.right * localBoundsSize.x * 0.5f * transform.lossyScale.x - offsetForward + offsetUp;
-                Handles.DrawLine(p7, p8, lineThickness);
-                #endregion draw lines
-
-                #region draw cube
-
-                // vertical sides
-                Handles.DrawLine(p1, p3, lineThickness);
-                Handles.DrawLine(p2, p4, lineThickness);
-                Handles.DrawLine(p5, p7, lineThickness);
-                Handles.DrawLine(p6, p8, lineThickness);
-
-                // horizontal sides
-                Handles.DrawLine(p1, p7, lineThickness);
-                Handles.DrawLine(p2, p8, lineThickness);
-                Handles.DrawLine(p3, p5, lineThickness);
-                Handles.DrawLine(p4, p6, lineThickness);
-                #endregion draw cube
-
-            }
         }
 #endif
     }
