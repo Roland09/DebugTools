@@ -2,7 +2,13 @@
  
 Tools for developing and debugging Unity
   
-#### DebugBounds
+### Installation
+
+Package manager url
+
+    https://github.com/Roland09/DebugTools.git?path=/Assets/DebugTools
+
+### DebugBounds
 
 Visualize the axis aligned and non axis aligned bounds of a gameobject.
 
